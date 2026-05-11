@@ -151,6 +151,7 @@
     <Text Include="default.frag" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="EBO.h" />
     <ClInclude Include="shaderClass.h" />
     <ClInclude Include="Texture.h" />
@@ -159,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\Downloads\context.png" />
+    <Image Include="..\..\..\Downloads\RicknMorty.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

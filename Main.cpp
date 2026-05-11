@@ -2,7 +2,9 @@
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include<stb/stb_image.h>
-
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 
 #include"shaderClass.h"
@@ -16,6 +18,8 @@
 namespace fs = std::filesystem;
 //------------------------------
 
+const unsigned int width = 800;
+const unsigned int height = 800;
 
 
 int main() {
@@ -30,21 +34,26 @@ int main() {
 
 	// Vertices coordinates / color values    // texture coordinates
 	GLfloat vertices[] = {
-   -0.5f, -0.5f, 0.00f,      1.0f, 0.0f, 0.0f,   0.0f, 0.0f,// Lower Left Corner
-   -0.5f,  0.5f, 0.00f,      0.0f, 1.0f, 0.0f,   0.0f, 1.0f, // Lower Right Corner
-	0.5f,  0.5f, 0.00f,      0.0f, 0.0f, 1.0f,   1.0f, 1.0f, // upper Corner
-	0.5f, -0.5f, 0.00f,      1.0f, 1.0f, 1.0f,   1.0f, 0.0f// inner left
+   -0.5f,  0.0f,  0.5f,      0.83f, 0.70f, 0.44f,   0.0f, 0.0f,
+   -0.5f,  0.0f, -0.5f,      0.83f, 0.70f, 0.44f,   5.0f, 0.0f,
+	0.5f,  0.0f, -0.5f,      0.83f, 0.70f, 0.44f,   0.0f, 0.0f, 
+	0.5f,  0.0f,  0.5f,      0.83f, 0.70f, 0.44f,   5.0f, 0.0f,
+	0.0f,  0.8f,  0.0f,      0.92f, 0.86f, 0.76f,   2.5f, 5.0f
 	
 
 	};
 
 	GLuint indeces[]{
-		0, 2, 1, // first triangle
-		0, 3, 2 // second triangle
+		0, 1, 2,
+		0, 2, 3,
+		0, 1, 4,
+		1, 2, 4,
+		2, 3, 4,
+		3, 0, 4
 	};
 
 	//create window
-	GLFWwindow* window = glfwCreateWindow(800, 800, "OpenGLTutorial", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGLTutorial", NULL, NULL);
 
 	//check if window is null
 	if (window == NULL) {
@@ -57,7 +66,7 @@ int main() {
 
 	//load glad and specify viewport of opengl in the window 
 	gladLoadGL();
-	glViewport(0, 0, 800, 800);
+	glViewport(0, 0, width, height);
 
 
 
@@ -83,29 +92,55 @@ int main() {
 
 
 	//texture  
-	Texture context("C:\\Users\\Jacob\\Downloads\\context.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
-	context.texUnit(shaderProgram, "tex0", 0);
+	Texture texture("C:\\Users\\Jacob\\Downloads\\RicknMorty.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+	texture.texUnit(shaderProgram, "tex0", 0);
 
 
+	float rotation = 0.0f;
+	double prevTime = glfwGetTime();
 
-
-	GLuint tex0Uni = glGetUniformLocation(shaderProgram.ID, "tex0");
-	shaderProgram.Activate();
-	glUniform1i(tex0Uni, 0);
+	//enable depth testing
+	glEnable(GL_DEPTH_TEST);
 
 	//loop so the window stays open
 	while (!glfwWindowShouldClose(window)) {
 		glad_glClearColor(0.07f, 0.013f, 0.17f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		//Tell opengl which shader program to use
 		shaderProgram.Activate();
+
+		//simple timer
+		double crntTime = glfwGetTime();
+		if(crntTime - prevTime >= 1 / 60) {
+			rotation += 0.5f;
+			prevTime = crntTime;
+		}
+
+		//initializes matrices to identity 
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 proj = glm::mat4(1.0f);
+
+		//assignes different transformations to each matrix
+		model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+		view = glm::translate(view, glm::vec3(0.0f, -0.5f, -2.0f));
+		proj = glm::perspective(glm::radians(45.0f), float(width / height), 0.1f, 100.0f);
+
+		//inputs matriecs into the shader program
+		int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		int viewLoc = glGetUniformLocation(shaderProgram.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		int projLoc = glGetUniformLocation(shaderProgram.ID, "proj");
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
+
 		//update the value of our uniform (scale) from our shader 
 		glUniform1f(uniID, 0.5f);
-		context.Bind();
+		texture.Bind();
 		//Bind the VAO so opengl knows to use it
 		VAO1.Bind();
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, sizeof(indeces)/sizeof(int), GL_UNSIGNED_INT, 0);
 
 
 		glfwSwapBuffers(window);
@@ -120,7 +155,7 @@ int main() {
 	VBO1.Delete();
 	EBO1.Delete();
 	shaderProgram.Delete();
-	context.Delete();
+	texture.Delete();
 	
 
 	//destroy window when done

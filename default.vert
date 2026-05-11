@@ -11,9 +11,14 @@ out vec2 texCoord;
 //controls scale of vertices
 uniform float scale;
 
+//inputs matrices needed for 3d viewing with perspective
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+
 void main()
 {
-	gl_Position = vec4(aPos.x + aPos.x * scale, aPos.y + aPos.y * scale, aPos.z + aPos.z * scale, 1.0);
+	gl_Position = proj * view * model * vec4(aPos, 1.0);
 	// Assign the colors from the vertex data to "color" which will be used in the fragment shader"
 	color = aColor;
 	texCoord = vec2(aTex.x, aTex.y) ;
